@@ -9,7 +9,7 @@ namespace DryCleaning.Domain.Entities;
 public sealed class Order
 {
     /// <summary>Идентификатор</summary>
-    public int OrderId { get; set; }
+    public required int OrderId { get; set; }
 
     /// <summary>Клиент, оформивший заказ</summary>
     public required Client Client { get; set; }

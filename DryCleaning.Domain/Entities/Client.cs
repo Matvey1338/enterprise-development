@@ -6,7 +6,7 @@ namespace DryCleaning.Domain.Entities;
 public sealed class Client
 {
     /// <summary>Идентификатор</summary>
-    public int ClientId { get; set; }
+    public required int ClientId { get; set; }
 
     /// <summary>ФИО</summary>
     public required string FullName { get; set; }

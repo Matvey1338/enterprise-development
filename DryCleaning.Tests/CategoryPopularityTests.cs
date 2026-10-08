@@ -34,7 +34,7 @@ public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
     public void Top5MostPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
         // Arrange: "последний год" - от текущей даты минус один год
-        var since = _fixture.Today.AddYears(-1);
+        var since = _fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var top5 = QueryCategoryPopularity(since)
@@ -54,7 +54,7 @@ public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
     public void Top5LeastPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
         // Arrange
-        var since = _fixture.Today.AddYears(-1);
+        var since = _fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var bottom5 = QueryCategoryPopularity(since)
@@ -75,7 +75,7 @@ public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
     public void OrdersOlderThanOneYear_AreNotCounted()
     {
         // Arrange
-        var since = _fixture.Today.AddYears(-1);
+        var since = _fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var popularity = QueryCategoryPopularity(since);

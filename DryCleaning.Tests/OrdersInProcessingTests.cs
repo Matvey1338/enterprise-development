@@ -35,7 +35,7 @@ public sealed class OrdersInProcessingTests : IClassFixture<DryCleaningFixture>
         Assert.Equal(new[] { 18, 17, 16, 15 }, result.Select(o => o.OrderId).ToArray());
         Assert.Equal(
             new[] { -20, -15, -12, -1 },
-            result.Select(o => o.ReceiptDate.DayNumber - _fixture.Today.DayNumber).ToArray());
+            result.Select(o => o.ReceiptDate.DayNumber - _fixture.ReferenceDate.DayNumber).ToArray());
     }
 
     [Fact]

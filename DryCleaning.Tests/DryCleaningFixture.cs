@@ -16,7 +16,7 @@ public class DryCleaningFixture
     /// <summary>
     /// Дата, относительно которой построены тестовые данные
     /// </summary>
-    public DateOnly Today { get; }
+    public DateOnly ReferenceDate { get; }
 
     /// <summary>
     /// Справочник категорий изделий
@@ -44,7 +44,7 @@ public class DryCleaningFixture
     public DryCleaningFixture()
     {
         Now = DateTime.Now;
-        Today = DateOnly.FromDateTime(Now);
+        ReferenceDate = DateOnly.FromDateTime(Now);
 
         Categories =
         [
@@ -77,7 +77,7 @@ public class DryCleaningFixture
         ];
 
         // Дата приёма как смещение в днях от Today
-        DateOnly Day(int offset) => Today.AddDays(offset);
+        DateOnly Day(int offset) => ReferenceDate.AddDays(offset);
 
         // Заказ и изделие создаются парой
         Order NewOrder(int id, Client client, string itemName, string material,

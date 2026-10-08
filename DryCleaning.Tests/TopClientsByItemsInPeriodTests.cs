@@ -16,8 +16,8 @@ public sealed class TopClientsByItemsInPeriodTests : IClassFixture<DryCleaningFi
     }
 
     // Заданный период: [сегодня - 100 дней; сегодня - 41 день], границы включаются
-    private DateOnly PeriodFrom => _fixture.Today.AddDays(-100);
-    private DateOnly PeriodTo => _fixture.Today.AddDays(-41);
+    private DateOnly PeriodFrom => _fixture.ReferenceDate.AddDays(-100);
+    private DateOnly PeriodTo => _fixture.ReferenceDate.AddDays(-41);
 
     private List<(Client Client, int ItemsCount)> QueryTop5ClientsByItemsCount(DateOnly from, DateOnly to) =>
         _fixture.Orders

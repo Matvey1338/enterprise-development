@@ -7,7 +7,7 @@ namespace DryCleaning.Domain.Entities;
 public sealed class Item
 {
     /// <summary>Идентификатор</summary>
-    public int ItemId { get; set; }
+    public required int ItemId { get; set; }
 
     /// <summary>Наименование изделия</summary>
     public required string Name { get; set; }
