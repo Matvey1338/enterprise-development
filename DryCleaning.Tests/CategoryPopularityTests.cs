@@ -9,32 +9,24 @@ namespace DryCleaning.Tests;
 /// Популярность категории - число заказов на изделия этой категории за период
 /// Категории без заказов считаются наименее популярными (0 заказов)
 /// </summary>
-public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
+public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
-    private readonly DryCleaningFixture _fixture;
-
-    public CategoryPopularityTests(DryCleaningFixture fixture)
+    private IReadOnlyList<(Category Category, int OrdersCount)> QueryCategoryPopularity(DateOnly since)
     {
-        _fixture = fixture;
-    }
-
-    private List<(Category Category, int OrdersCount)> QueryCategoryPopularity(DateOnly since)
-    {
-        var ordersCountByCategoryId = _fixture.Orders
+        var ordersCountByCategoryId = fixture.Orders
             .Where(o => o.ReceiptDate >= since)
             .GroupBy(o => o.Item.Category.CategoryId)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        return _fixture.Categories
-            .Select(c => (Category: c, OrdersCount: ordersCountByCategoryId.GetValueOrDefault(c.CategoryId)))
-            .ToList();
+        return [.. fixture.Categories
+            .Select(c => (Category: c, OrdersCount: ordersCountByCategoryId.GetValueOrDefault(c.CategoryId)))];
     }
 
     [Fact]
     public void Top5MostPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
-        // Arrange: "последний год" - от текущей даты минус один год
-        var since = _fixture.ReferenceDate.AddYears(-1);
+        // Arrange: "последний год" - от опорной даты минус один год
+        var since = fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var top5 = QueryCategoryPopularity(since)
@@ -54,7 +46,7 @@ public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
     public void Top5LeastPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
         // Arrange
-        var since = _fixture.ReferenceDate.AddYears(-1);
+        var since = fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var bottom5 = QueryCategoryPopularity(since)
@@ -75,7 +67,7 @@ public sealed class CategoryPopularityTests : IClassFixture<DryCleaningFixture>
     public void OrdersOlderThanOneYear_AreNotCounted()
     {
         // Arrange
-        var since = _fixture.ReferenceDate.AddYears(-1);
+        var since = fixture.ReferenceDate.AddYears(-1);
 
         // Act
         var popularity = QueryCategoryPopularity(since);

@@ -6,28 +6,20 @@ namespace DryCleaning.Tests;
 /// Запрос: «Вывести информацию о топ-5 клиентах, сдавших больше всего изделий
 /// за заданный период». Каждый заказ соответствует ровно одному изделию.
 /// </summary>
-public sealed class TopClientsByItemsInPeriodTests : IClassFixture<DryCleaningFixture>
+public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
-    private readonly DryCleaningFixture _fixture;
+    // Заданный период: [опорная дата - 100 дней; опорная дата - 41 день], границы включаются
+    private DateOnly PeriodFrom => fixture.ReferenceDate.AddDays(-100);
+    private DateOnly PeriodTo => fixture.ReferenceDate.AddDays(-41);
 
-    public TopClientsByItemsInPeriodTests(DryCleaningFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
-    // Заданный период: [сегодня - 100 дней; сегодня - 41 день], границы включаются
-    private DateOnly PeriodFrom => _fixture.ReferenceDate.AddDays(-100);
-    private DateOnly PeriodTo => _fixture.ReferenceDate.AddDays(-41);
-
-    private List<(Client Client, int ItemsCount)> QueryTop5ClientsByItemsCount(DateOnly from, DateOnly to) =>
-        _fixture.Orders
+    private IReadOnlyList<(Client Client, int ItemsCount)> QueryTop5ClientsByItemsCount(DateOnly from, DateOnly to) =>
+        [.. fixture.Orders
             .Where(o => o.ReceiptDate >= from && o.ReceiptDate <= to)
             .GroupBy(o => o.Client.ClientId)
             .Select(g => (Client: g.First().Client, ItemsCount: g.Count()))
             .OrderByDescending(x => x.ItemsCount)
             .ThenBy(x => x.Client.FullName, StringComparer.Ordinal)
-            .Take(5)
-            .ToList();
+            .Take(5)];
 
     [Fact]
     public void Top5Clients_ByItemsCountInPeriod_AreReturnedInExpectedOrder()

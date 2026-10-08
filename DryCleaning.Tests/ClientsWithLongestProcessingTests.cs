@@ -9,25 +9,17 @@ namespace DryCleaning.Tests;
 /// Длительность обработки заказа определяется его сроком выполнения
 /// (CompletionTermDays)
 /// </summary>
-public sealed class ClientsWithLongestProcessingTests : IClassFixture<DryCleaningFixture>
+public sealed class ClientsWithLongestProcessingTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
-    private readonly DryCleaningFixture _fixture;
-
-    public ClientsWithLongestProcessingTests(DryCleaningFixture fixture)
+    private IReadOnlyList<Client> QueryClientsWithLongestProcessing()
     {
-        _fixture = fixture;
-    }
+        var maxTermDays = fixture.Orders.Max(o => o.CompletionTermDays);
 
-    private List<Client> QueryClientsWithLongestProcessing()
-    {
-        var maxTermDays = _fixture.Orders.Max(o => o.CompletionTermDays);
-
-        return _fixture.Orders
+        return [.. fixture.Orders
             .Where(o => o.CompletionTermDays == maxTermDays)
             .Select(o => o.Client)
             .DistinctBy(c => c.ClientId)
-            .OrderBy(c => c.FullName, StringComparer.Ordinal)
-            .ToList();
+            .OrderBy(c => c.FullName, StringComparer.Ordinal)];
     }
 
     [Fact]

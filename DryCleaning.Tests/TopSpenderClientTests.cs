@@ -10,23 +10,15 @@ namespace DryCleaning.Tests;
 /// Потраченная сумма - сумма стоимостей чистки по всем заказам клиента
 /// за весь период; отменённые заказы не оплачиваются и не учитываются
 /// </summary>
-public sealed class TopSpenderClientTests : IClassFixture<DryCleaningFixture>
+public sealed class TopSpenderClientTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
-    private readonly DryCleaningFixture _fixture;
-
-    public TopSpenderClientTests(DryCleaningFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
-    private List<(Client Client, decimal TotalSpent)> QueryTotalSpending() =>
-        _fixture.Clients
+    private IReadOnlyList<(Client Client, decimal TotalSpent)> QueryTotalSpending() =>
+        [.. fixture.Clients
             .Select(c => (
                 Client: c,
-                TotalSpent: _fixture.Orders
+                TotalSpent: fixture.Orders
                     .Where(o => o.Client.ClientId == c.ClientId && o.Status != OrderStatus.Cancelled)
-                    .Sum(o => o.Item.Category.CleaningPrice)))
-            .ToList();
+                    .Sum(o => o.Item.Category.CleaningPrice)))];
 
     [Fact]
     public void ClientWithMaxTotalSpending_IsReturned()

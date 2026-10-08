@@ -4,7 +4,7 @@ using DryCleaning.Domain.Enums;
 namespace DryCleaning.Tests;
 
 /// <summary>
-/// Фикстура, содержащая тестовые данные химчистк
+/// Фикстура, содержащая тестовые данные химчистки
 /// </summary>
 public class DryCleaningFixture
 {
@@ -21,22 +21,22 @@ public class DryCleaningFixture
     /// <summary>
     /// Справочник категорий изделий
     /// </summary>
-    public readonly List<Category> Categories;
+    public IReadOnlyList<Category> Categories { get; }
 
     /// <summary>
     /// Клиенты химчистки
     /// </summary>
-    public readonly List<Client> Clients;
+    public IReadOnlyList<Client> Clients { get; }
 
     /// <summary>
-    /// Принятые изделия (по одному на каждый заказ, Id изделия = Id заказа
+    /// Принятые изделия (по одному на каждый заказ, ItemId = OrderId)
     /// </summary>
-    public readonly List<Item> Items;
+    public IReadOnlyList<Item> Items { get; }
 
     /// <summary>
     /// Заказы химчистки
     /// </summary>
-    public readonly List<Order> Orders;
+    public IReadOnlyList<Order> Orders { get; }
 
     /// <summary>
     /// Инициализирует тестовые данные
@@ -76,7 +76,7 @@ public class DryCleaningFixture
             new Client { ClientId = 11, FullName = "Соловьёв Игорь Олегович",       Phone = "+7 (923) 456-78-91" },
         ];
 
-        // Дата приёма как смещение в днях от Today
+        // Дата приёма как смещение в днях от ReferenceDate
         DateOnly Day(int offset) => ReferenceDate.AddDays(offset);
 
         // Заказ и изделие создаются парой
@@ -93,7 +93,7 @@ public class DryCleaningFixture
 
         Orders =
         [
-            // Заказы внутри "заданного периода" [Today-100; Today-41] (включительно)
+            // Заказы внутри «заданного периода» [ReferenceDate-100; ReferenceDate-41] (включительно)
             // Изделий за период: Иванов - 4, Петров - 3, Сидорова - 3,
             // Кузнецов - 2, Смирнова - 2, Васильев - 1
             NewOrder(0,  Clients[0],  "Пальто", "шерсть", Categories[0], -42, 5, OrderStatus.Issued),
@@ -130,6 +130,6 @@ public class DryCleaningFixture
             NewOrder(27, Clients[10], "Шуба", "норка", Categories[6], -410, 10, OrderStatus.Issued),
         ];
 
-        Items = Orders.Select(o => o.Item).ToList();
+        Items = [.. Orders.Select(o => o.Item)];
     }
 }

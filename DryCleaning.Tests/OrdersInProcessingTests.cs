@@ -7,20 +7,12 @@ namespace DryCleaning.Tests;
 /// Запрос: "Вывести информацию о заказах, находящихся в обработке,
 /// упорядоченных по дате приема"
 /// </summary>
-public sealed class OrdersInProcessingTests : IClassFixture<DryCleaningFixture>
+public sealed class OrdersInProcessingTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
-    private readonly DryCleaningFixture _fixture;
-
-    public OrdersInProcessingTests(DryCleaningFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
-    private List<Order> QueryOrdersInProcessing() =>
-        _fixture.Orders
+    private IReadOnlyList<Order> QueryOrdersInProcessing() =>
+        [.. fixture.Orders
             .Where(o => o.Status == OrderStatus.InProcessing)
-            .OrderBy(o => o.ReceiptDate)
-            .ToList();
+            .OrderBy(o => o.ReceiptDate)];
 
     [Fact]
     public void OrdersInProcessing_AreOrderedByReceiptDateAscending()
@@ -35,7 +27,7 @@ public sealed class OrdersInProcessingTests : IClassFixture<DryCleaningFixture>
         Assert.Equal(new[] { 18, 17, 16, 15 }, result.Select(o => o.OrderId).ToArray());
         Assert.Equal(
             new[] { -20, -15, -12, -1 },
-            result.Select(o => o.ReceiptDate.DayNumber - _fixture.ReferenceDate.DayNumber).ToArray());
+            result.Select(o => o.ReceiptDate.DayNumber - fixture.ReferenceDate.DayNumber).ToArray());
     }
 
     [Fact]
