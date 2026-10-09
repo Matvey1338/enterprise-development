@@ -3,8 +3,8 @@ using DryCleaning.Domain.Entities;
 namespace DryCleaning.Tests;
 
 /// <summary>
-/// Запрос: «Вывести информацию о топ-5 клиентах, сдавших больше всего изделий
-/// за заданный период». Каждый заказ соответствует ровно одному изделию.
+/// Запрос: "Вывести информацию о топ-5 клиентах, сдавших больше всего изделий
+/// за заданный период". Каждый заказ соответствует ровно одному изделию
 /// </summary>
 public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
 {
@@ -24,58 +24,71 @@ public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) :
     [Fact]
     public void Top5Clients_ByItemsCountInPeriod_AreReturnedInExpectedOrder()
     {
+        // Arrange: эталонные значения
+        string[] expectedFullNames =
+        [
+            "Иванов Иван Иванович",          // 4 изделия
+            "Петров Пётр Петрович",          // 3 изделия
+            "Сидорова Анна Сергеевна",       // 3 изделия
+            "Кузнецов Алексей Владимирович", // 2 изделия
+            "Смирнова Елена Андреевна"       // 2 изделия
+        ];
+        int[] expectedItemsCounts = [4, 3, 3, 2, 2];
+
         // Act
         var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
 
         // Assert
-        Assert.Equal(
-            new[]
-            {
-                "Иванов Иван Иванович",          // 4 изделия
-                "Петров Пётр Петрович",          // 3 изделия
-                "Сидорова Анна Сергеевна",       // 3 изделия
-                "Кузнецов Алексей Владимирович", // 2 изделия
-                "Смирнова Елена Андреевна"       // 2 изделия
-            },
-            result.Select(x => x.Client.FullName).ToArray());
-        Assert.Equal(new[] { 4, 3, 3, 2, 2 }, result.Select(x => x.ItemsCount).ToArray());
+        Assert.Equal(expectedFullNames, result.Select(x => x.Client.FullName).ToArray());
+        Assert.Equal(expectedItemsCounts, result.Select(x => x.ItemsCount).ToArray());
     }
 
     [Fact]
     public void ClientsWithSameItemsCount_AreOrderedByFullName()
     {
+        // Arrange: эталон - при равенстве числа изделий клиенты упорядочиваются по ФИО:
+        // Петров/Сидорова (по 3 изделия) - позиции 2-3, Кузнецов/Смирнова (по 2) - позиции 4-5
+        string[] expectedFullNamesAfterLeader =
+        [
+            "Петров Пётр Петрович",
+            "Сидорова Анна Сергеевна",
+            "Кузнецов Алексей Владимирович",
+            "Смирнова Елена Андреевна"
+        ];
+
         // Act
         var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
 
-        // Assert: при равенстве числа изделий клиенты упорядочиваются по ФИО
-        // (Петров/Сидорова - по 3, Кузнецов/Смирнова - по 2)
-        Assert.Equal("Петров Пётр Петрович", result[1].Client.FullName);
-        Assert.Equal("Сидорова Анна Сергеевна", result[2].Client.FullName);
-        Assert.Equal("Кузнецов Алексей Владимирович", result[3].Client.FullName);
-        Assert.Equal("Смирнова Елена Андреевна", result[4].Client.FullName);
+        // Assert
+        Assert.Equal(expectedFullNamesAfterLeader, result.Skip(1).Select(x => x.Client.FullName).ToArray());
     }
 
     [Fact]
     public void ClientWithSingleItemInPeriod_IsNotIncludedInTop5()
     {
+        // Arrange: эталон - Васильев сдал в периоде только 1 изделие (заказ 14)
+        // и не попадает в топ-5, хотя всего у него два заказа
+        const string clientOutsideTop5 = "Васильев Дмитрий Николаевич";
+        const int expectedTopSize = 5;
+
         // Act
         var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
 
-        // Assert: Васильев сдал в периоде только 1 изделие (заказ 14)
-        // и не попадает в топ-5, хотя всего у него два заказа
-        Assert.DoesNotContain(result, x => x.Client.FullName == "Васильев Дмитрий Николаевич");
-        Assert.Equal(5, result.Count);
+        // Assert
+        Assert.DoesNotContain(result, x => x.Client.FullName == clientOutsideTop5);
+        Assert.Equal(expectedTopSize, result.Count);
     }
 
-    [Fact]
-    public void OrdersOutsidePeriod_AreNotCounted()
+    [Theory]
+    [InlineData("Петров Пётр Петрович", 3)] // заказ 15 (-1 день) вне периода - не учитывается
+    [InlineData("Иванов Иван Иванович", 4)] // заказ 20 (-3 дня) вне периода - не учитывается
+    public void OrdersOutsidePeriod_AreNotCounted(string clientFullName, int expectedItemsCount)
     {
         // Act
         var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
 
-        // Assert: заказ 15 (Петров, -1 день) и заказ 20 (Иванов, -3 дня)
-        // находятся вне периода и не учитываются
-        Assert.Equal(3, result.Single(x => x.Client.FullName == "Петров Пётр Петрович").ItemsCount);
-        Assert.Equal(4, result.Single(x => x.Client.FullName == "Иванов Иван Иванович").ItemsCount);
+        // Assert
+        var client = result.Single(x => x.Client.FullName == clientFullName);
+        Assert.Equal(expectedItemsCount, client.ItemsCount);
     }
 }

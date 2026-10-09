@@ -27,6 +27,8 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
     {
         // Arrange: "последний год" - от опорной даты минус один год
         var since = fixture.ReferenceDate.AddYears(-1);
+        string[] expectedNames = ["Верхняя одежда", "Костюмы", "Платья", "Рубашки", "Брюки"];
+        int[] expectedOrdersCounts = [6, 5, 3, 3, 2];
 
         // Act
         var top5 = QueryCategoryPopularity(since)
@@ -36,10 +38,8 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
             .ToList();
 
         // Assert: "Платья" и "Рубашки" имеют по 3 заказа и упорядочены по названию
-        Assert.Equal(
-            new[] { "Верхняя одежда", "Костюмы", "Платья", "Рубашки", "Брюки" },
-            top5.Select(x => x.Category.Name).ToArray());
-        Assert.Equal(new[] { 6, 5, 3, 3, 2 }, top5.Select(x => x.OrdersCount).ToArray());
+        Assert.Equal(expectedNames, top5.Select(x => x.Category.Name).ToArray());
+        Assert.Equal(expectedOrdersCounts, top5.Select(x => x.OrdersCount).ToArray());
     }
 
     [Fact]
@@ -47,6 +47,8 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
     {
         // Arrange
         var since = fixture.ReferenceDate.AddYears(-1);
+        string[] expectedNames = ["Одеяла", "Шторы", "Ковры", "Кожаные изделия", "Меховые изделия"];
+        int[] expectedOrdersCounts = [0, 0, 1, 1, 1];
 
         // Act
         var bottom5 = QueryCategoryPopularity(since)
@@ -55,16 +57,16 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
             .Take(5)
             .ToList();
 
-        // Assert: "Одеяла" и "Шторы" не имели заказов за последний год
-        // (их заказы приняты больше года назад)
-        Assert.Equal(
-            new[] { "Одеяла", "Шторы", "Ковры", "Кожаные изделия", "Меховые изделия" },
-            bottom5.Select(x => x.Category.Name).ToArray());
-        Assert.Equal(new[] { 0, 0, 1, 1, 1 }, bottom5.Select(x => x.OrdersCount).ToArray());
+        // Assert
+        Assert.Equal(expectedNames, bottom5.Select(x => x.Category.Name).ToArray());
+        Assert.Equal(expectedOrdersCounts, bottom5.Select(x => x.OrdersCount).ToArray());
     }
 
-    [Fact]
-    public void OrdersOlderThanOneYear_AreNotCounted()
+    [Theory]
+    [InlineData("Шторы", 0)]           // единственный заказ (22) старше года - не учитывается
+    [InlineData("Одеяла", 0)]          // единственный заказ (23) старше года - не учитывается
+    [InlineData("Меховые изделия", 1)] // свежий заказ 17 учитывается, а заказ 27 старше года - нет
+    public void OrdersOlderThanOneYear_AreNotCounted(string categoryName, int expectedOrdersCount)
     {
         // Arrange
         var since = fixture.ReferenceDate.AddYears(-1);
@@ -72,9 +74,8 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
         // Act
         var popularity = QueryCategoryPopularity(since);
 
-        // Assert: заказы на шторы (22) и одеяла (23) приняты больше года назад,
-        // поэтому за последний год у этих категорий 0 заказов.
-        Assert.Equal(0, popularity.Single(x => x.Category.Name == "Шторы").OrdersCount);
-        Assert.Equal(0, popularity.Single(x => x.Category.Name == "Одеяла").OrdersCount);
+        // Assert
+        var category = popularity.Single(x => x.Category.Name == categoryName);
+        Assert.Equal(expectedOrdersCount, category.OrdersCount);
     }
 }
