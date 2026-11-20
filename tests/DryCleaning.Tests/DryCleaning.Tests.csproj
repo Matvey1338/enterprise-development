@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DryCleaning.Domain\DryCleaning.Domain.csproj"/>
+        <ProjectReference Include="..\..\src\DryCleaning.Domain\DryCleaning.Domain.csproj"/>
     </ItemGroup>
 
 </Project>
