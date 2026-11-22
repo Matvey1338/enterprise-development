@@ -54,14 +54,14 @@ public static class DryCleaningDataSeeder
         // Заказ и изделие создаются парой
         Order NewOrder(int id, Client client, string itemName, string material,
             Category category, int receiptOffset, int termDays, OrderStatus status) => new()
-        {
-            OrderId = id,
-            Client = client,
-            Item = new Item { ItemId = id, Name = itemName, Material = material, Category = category },
-            ReceiptDate = Day(receiptOffset),
-            CompletionTermDays = termDays,
-            Status = status
-        };
+            {
+                OrderId = id,
+                Client = client,
+                Item = new Item { ItemId = id, Name = itemName, Material = material, Category = category },
+                ReceiptDate = Day(receiptOffset),
+                CompletionTermDays = termDays,
+                Status = status
+            };
 
         IReadOnlyList<Order> orders =
         [
