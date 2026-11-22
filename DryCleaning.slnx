@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="src/DryCleaning.Domain/DryCleaning.Domain.csproj" />
+  <Project Path="src/DryCleaning.Infrastructure.InMemory/DryCleaning.Infrastructure.InMemory.csproj" />
   <Project Path="tests/DryCleaning.Tests/DryCleaning.Tests.csproj" />
 </Solution>
