@@ -11,12 +11,12 @@ namespace DryCleaning.Tests;
 /// </summary>
 public class RepositoryTests
 {
-    private static readonly DateTime ReferenceMoment = new(2026, 11, 1, 12, 0, 0);
+    private static readonly DateTime _referenceMoment = new(2026, 11, 1, 12, 0, 0);
 
     /// <summary>
     /// Создаёт набор данных, зафиксированный относительно одного момента времени
     /// </summary>
-    private static DryCleaningData CreateData() => DryCleaningDataSeeder.Create(ReferenceMoment);
+    private static DryCleaningData CreateData() => DryCleaningDataSeeder.Create(_referenceMoment);
 
     /// <summary>
     /// Обновление категории сохраняет ссылки в изделиях и заказах:
@@ -85,7 +85,7 @@ public class RepositoryTests
         });
 
         // в топ-5 клиентов за период клиент входит один раз, с новым ФИО, на прежней позиции
-        var today = DateOnly.FromDateTime(ReferenceMoment);
+        var today = DateOnly.FromDateTime(_referenceMoment);
         var top = await orders.GetTopClientsByItemsCountAsync(today.AddDays(-100), today.AddDays(-41), 5);
         Assert.Equal(5, top.Count);
         Assert.Equal("Петров Пётр Петрович-старший", top[1].Client.FullName);
@@ -139,7 +139,7 @@ public class RepositoryTests
             OrderId = 999,
             Client = data.Clients[0],
             Item = data.Items[0],
-            ReceiptDate = DateOnly.FromDateTime(ReferenceMoment),
+            ReceiptDate = DateOnly.FromDateTime(_referenceMoment),
             CompletionTermDays = 3,
             Status = OrderStatus.Accepted,
         });
@@ -154,7 +154,7 @@ public class RepositoryTests
             OrderId = 777,
             Client = data.Clients[0],
             Item = data.Items[0],
-            ReceiptDate = DateOnly.FromDateTime(ReferenceMoment),
+            ReceiptDate = DateOnly.FromDateTime(_referenceMoment),
             CompletionTermDays = 3,
             Status = OrderStatus.Accepted,
         });
@@ -175,7 +175,7 @@ public class RepositoryTests
         // arrange
         var data = CreateData();
         var orders = new InMemoryOrderRepository(data.Orders);
-        var today = DateOnly.FromDateTime(ReferenceMoment);
+        var today = DateOnly.FromDateTime(_referenceMoment);
 
         // act: удаляем заказ 18 (в обработке, срок 14 дней, клиент Соловьёв)
         var deleted = await orders.DeleteAsync(18);
