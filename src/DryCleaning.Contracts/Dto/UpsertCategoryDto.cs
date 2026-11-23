@@ -6,7 +6,7 @@ namespace DryCleaning.Contracts.Dto;
 /// <summary>
 /// DTO категории изделия: данные для создания и обновления
 /// </summary>
-public class UpsertCategoryDto
+public class UpsertCategoryDto : IValidatableObject
 {
     /// <summary>
     /// Название категории
@@ -25,6 +25,16 @@ public class UpsertCategoryDto
     /// Стоимость чистки изделия данной категории, руб
     /// </summary>
     [Required(ErrorMessage = "Не указана стоимость чистки")]
-    [Range(typeof(decimal), "0.01", "10000000", ErrorMessage = "Стоимость чистки должна быть положительной")]
     public decimal? CleaningPrice { get; init; }
+
+    /// <inheritdoc/>
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (CleaningPrice is <= 0)
+        {
+            yield return new ValidationResult(
+                "Стоимость чистки должна быть положительной.",
+                [nameof(CleaningPrice)]);
+        }
+    }
 }
