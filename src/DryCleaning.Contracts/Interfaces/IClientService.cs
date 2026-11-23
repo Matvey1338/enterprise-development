@@ -59,6 +59,13 @@ public interface IClientService
     public Task<IReadOnlyList<ClientDto>> GetClientsWithLongestProcessingAsync();
 
     /// <summary>
+    /// Возвращает клиентов, упорядоченных по убыванию потраченной суммы
+    /// за весь период работы химчистки; при равной сумме - по ФИО
+    /// Клиенты без оплаченных заказов имеют нулевую сумму трат
+    /// </summary>
+    public Task<IReadOnlyList<ClientSpendingDto>> GetClientsSpendingAsync();
+
+    /// <summary>
     /// Возвращает клиента с наибольшей суммой трат за весь период работы
     /// химчистки или null, если нет ни одного оплаченного заказа
     /// Отменённые заказы не оплачиваются и не учитываются
