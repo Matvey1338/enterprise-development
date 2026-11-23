@@ -1,4 +1,4 @@
-using DryCleaning.Domain.Entities;
+using DryCleaning.Contracts.Dto;
 
 namespace DryCleaning.Tests;
 
@@ -9,56 +9,41 @@ namespace DryCleaning.Tests;
 /// Популярность категории - число заказов на изделия этой категории за период
 /// Категории без заказов считаются наименее популярными (0 заказов)
 /// </summary>
-public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
+public sealed class CategoryPopularityTests
 {
-    private IReadOnlyList<(Category Category, int OrdersCount)> QueryCategoryPopularity(DateOnly since)
-    {
-        var ordersCountByCategoryId = fixture.Orders
-            .Where(o => o.ReceiptDate >= since)
-            .GroupBy(o => o.Item.Category.CategoryId)
-            .ToDictionary(g => g.Key, g => g.Count());
+    private readonly ServiceSet _services = ServiceSetFactory.Create();
 
-        return [.. fixture.Categories
-            .Select(c => (Category: c, OrdersCount: ordersCountByCategoryId.GetValueOrDefault(c.CategoryId)))];
-    }
+    // "Последний год" сервис отсчитывает от часов, синхронизированных с данными
+    private Task<IReadOnlyList<CategoryPopularityDto>> QueryMostPopular(int count = 5) =>
+        _services.Categories.GetMostPopularCategoriesAsync(count);
 
     [Fact]
-    public void Top5MostPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
+    public async Task Top5MostPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
-        // Arrange: "последний год" - от опорной даты минус один год
-        var since = fixture.ReferenceDate.AddYears(-1);
+        // Arrange: эталонные значения
         string[] expectedNames = ["Верхняя одежда", "Костюмы", "Платья", "Рубашки", "Брюки"];
         int[] expectedOrdersCounts = [6, 5, 3, 3, 2];
 
         // Act
-        var top5 = QueryCategoryPopularity(since)
-            .OrderByDescending(x => x.OrdersCount)
-            .ThenBy(x => x.Category.Name, StringComparer.Ordinal)
-            .Take(5)
-            .ToList();
+        var top5 = await QueryMostPopular();
 
         // Assert: "Платья" и "Рубашки" имеют по 3 заказа и упорядочены по названию
-        Assert.Equal(expectedNames, top5.Select(x => x.Category.Name).ToArray());
+        Assert.Equal(expectedNames, top5.Select(x => x.Name).ToArray());
         Assert.Equal(expectedOrdersCounts, top5.Select(x => x.OrdersCount).ToArray());
     }
 
     [Fact]
-    public void Top5LeastPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
+    public async Task Top5LeastPopularCategories_ForLastYear_AreReturnedInExpectedOrder()
     {
         // Arrange
-        var since = fixture.ReferenceDate.AddYears(-1);
         string[] expectedNames = ["Одеяла", "Шторы", "Ковры", "Кожаные изделия", "Меховые изделия"];
         int[] expectedOrdersCounts = [0, 0, 1, 1, 1];
 
         // Act
-        var bottom5 = QueryCategoryPopularity(since)
-            .OrderBy(x => x.OrdersCount)
-            .ThenBy(x => x.Category.Name, StringComparer.Ordinal)
-            .Take(5)
-            .ToList();
+        var bottom5 = await _services.Categories.GetLeastPopularCategoriesAsync();
 
         // Assert
-        Assert.Equal(expectedNames, bottom5.Select(x => x.Category.Name).ToArray());
+        Assert.Equal(expectedNames, bottom5.Select(x => x.Name).ToArray());
         Assert.Equal(expectedOrdersCounts, bottom5.Select(x => x.OrdersCount).ToArray());
     }
 
@@ -66,16 +51,14 @@ public sealed class CategoryPopularityTests(DryCleaningFixture fixture) : IClass
     [InlineData("Шторы", 0)]           // единственный заказ (22) старше года - не учитывается
     [InlineData("Одеяла", 0)]          // единственный заказ (23) старше года - не учитывается
     [InlineData("Меховые изделия", 1)] // свежий заказ 17 учитывается, а заказ 27 старше года - нет
-    public void OrdersOlderThanOneYear_AreNotCounted(string categoryName, int expectedOrdersCount)
+    public async Task OrdersOlderThanOneYear_AreNotCounted(string categoryName, int expectedOrdersCount)
     {
-        // Arrange
-        var since = fixture.ReferenceDate.AddYears(-1);
-
-        // Act
-        var popularity = QueryCategoryPopularity(since);
+        // Arrange: полный рейтинг - count равно размеру справочника категорий (10),
+        // чтобы в выборку попали все категории, включая непопулярные
+        var popularity = await QueryMostPopular(10);
 
         // Assert
-        var category = popularity.Single(x => x.Category.Name == categoryName);
+        var category = popularity.Single(x => x.Name == categoryName);
         Assert.Equal(expectedOrdersCount, category.OrdersCount);
     }
 }

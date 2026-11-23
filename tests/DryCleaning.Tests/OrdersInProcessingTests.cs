@@ -1,4 +1,4 @@
-using DryCleaning.Domain.Entities;
+using DryCleaning.Contracts.Dto;
 using DryCleaning.Domain.Enums;
 
 namespace DryCleaning.Tests;
@@ -7,15 +7,12 @@ namespace DryCleaning.Tests;
 /// Запрос: "Вывести информацию о заказах, находящихся в обработке,
 /// упорядоченных по дате приема"
 /// </summary>
-public sealed class OrdersInProcessingTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
+public sealed class OrdersInProcessingTests
 {
-    private IReadOnlyList<Order> QueryOrdersInProcessing() =>
-        [.. fixture.Orders
-            .Where(o => o.Status == OrderStatus.InProcessing)
-            .OrderBy(o => o.ReceiptDate)];
+    private readonly ServiceSet _services = ServiceSetFactory.Create();
 
     [Fact]
-    public void OrdersInProcessing_AreOrderedByReceiptDateAscending()
+    public async Task OrdersInProcessing_AreOrderedByReceiptDateAscending()
     {
         // Arrange: эталон - 4 заказа в обработке (OrderId 15-18) с датами приёма
         // -1, -12, -15 и -20 дней от опорной даты, от ранней даты к поздней
@@ -23,24 +20,24 @@ public sealed class OrdersInProcessingTests(DryCleaningFixture fixture) : IClass
         int[] expectedReceiptDayOffsets = [-20, -15, -12, -1];
 
         // Act
-        var result = QueryOrdersInProcessing();
+        IReadOnlyList<OrderDto> result = await _services.Orders.GetInProcessingAsync();
 
         // Assert
         Assert.Equal(expectedOrderIds, result.Select(o => o.OrderId).ToArray());
         Assert.Equal(
             expectedReceiptDayOffsets,
-            result.Select(o => o.ReceiptDate.DayNumber - fixture.ReferenceDate.DayNumber).ToArray());
+            result.Select(o => o.ReceiptDate.DayNumber - _services.ReferenceDate.DayNumber).ToArray());
     }
 
     [Fact]
-    public void OrdersInProcessing_ContainOnlyOrdersWithInProcessingStatus()
+    public async Task OrdersInProcessing_ContainOnlyOrdersWithInProcessingStatus()
     {
         // Arrange: эталон - 4 заказа в обработке; свежие заказы 20 (принят)
         // и 21 (выполнен) в выборку не попадают
         const int expectedOrdersCount = 4;
 
         // Act
-        var result = QueryOrdersInProcessing();
+        IReadOnlyList<OrderDto> result = await _services.Orders.GetInProcessingAsync();
 
         // Assert
         Assert.Equal(expectedOrdersCount, result.Count);

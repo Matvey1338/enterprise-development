@@ -1,4 +1,4 @@
-using DryCleaning.Domain.Entities;
+using DryCleaning.Contracts.Dto;
 
 namespace DryCleaning.Tests;
 
@@ -6,23 +6,19 @@ namespace DryCleaning.Tests;
 /// Запрос: "Вывести информацию о топ-5 клиентах, сдавших больше всего изделий
 /// за заданный период". Каждый заказ соответствует ровно одному изделию
 /// </summary>
-public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) : IClassFixture<DryCleaningFixture>
+public sealed class TopClientsByItemsInPeriodTests
 {
-    // Заданный период: [опорная дата - 100 дней; опорная дата - 41 день], границы включаются
-    private DateOnly PeriodFrom => fixture.ReferenceDate.AddDays(-100);
-    private DateOnly PeriodTo => fixture.ReferenceDate.AddDays(-41);
+    private readonly ServiceSet _services = ServiceSetFactory.Create();
 
-    private IReadOnlyList<(Client Client, int ItemsCount)> QueryTop5ClientsByItemsCount(DateOnly from, DateOnly to) =>
-        [.. fixture.Orders
-            .Where(o => o.ReceiptDate >= from && o.ReceiptDate <= to)
-            .GroupBy(o => o.Client.ClientId)
-            .Select(g => (Client: g.First().Client, ItemsCount: g.Count()))
-            .OrderByDescending(x => x.ItemsCount)
-            .ThenBy(x => x.Client.FullName, StringComparer.Ordinal)
-            .Take(5)];
+    // Заданный период: [опорная дата - 100 дней; опорная дата - 41 день], границы включаются
+    private DateOnly PeriodFrom => _services.ReferenceDate.AddDays(-100);
+    private DateOnly PeriodTo => _services.ReferenceDate.AddDays(-41);
+
+    private Task<IReadOnlyList<ClientItemsCountDto>> QueryTop5ClientsByItemsCount() =>
+        _services.Clients.GetTopClientsByItemsCountAsync(PeriodFrom, PeriodTo);
 
     [Fact]
-    public void Top5Clients_ByItemsCountInPeriod_AreReturnedInExpectedOrder()
+    public async Task Top5Clients_ByItemsCountInPeriod_AreReturnedInExpectedOrder()
     {
         // Arrange: эталонные значения
         string[] expectedFullNames =
@@ -36,15 +32,15 @@ public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) :
         int[] expectedItemsCounts = [4, 3, 3, 2, 2];
 
         // Act
-        var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
+        var result = await QueryTop5ClientsByItemsCount();
 
         // Assert
-        Assert.Equal(expectedFullNames, result.Select(x => x.Client.FullName).ToArray());
+        Assert.Equal(expectedFullNames, result.Select(x => x.FullName).ToArray());
         Assert.Equal(expectedItemsCounts, result.Select(x => x.ItemsCount).ToArray());
     }
 
     [Fact]
-    public void ClientsWithSameItemsCount_AreOrderedByFullName()
+    public async Task ClientsWithSameItemsCount_AreOrderedByFullName()
     {
         // Arrange: эталон - при равенстве числа изделий клиенты упорядочиваются по ФИО:
         // Петров/Сидорова (по 3 изделия) - позиции 2-3, Кузнецов/Смирнова (по 2) - позиции 4-5
@@ -57,14 +53,14 @@ public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) :
         ];
 
         // Act
-        var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
+        var result = await QueryTop5ClientsByItemsCount();
 
         // Assert
-        Assert.Equal(expectedFullNamesAfterLeader, result.Skip(1).Select(x => x.Client.FullName).ToArray());
+        Assert.Equal(expectedFullNamesAfterLeader, result.Skip(1).Select(x => x.FullName).ToArray());
     }
 
     [Fact]
-    public void ClientWithSingleItemInPeriod_IsNotIncludedInTop5()
+    public async Task ClientWithSingleItemInPeriod_IsNotIncludedInTop5()
     {
         // Arrange: эталон - Васильев сдал в периоде только 1 изделие (заказ 14)
         // и не попадает в топ-5, хотя всего у него два заказа
@@ -72,23 +68,23 @@ public sealed class TopClientsByItemsInPeriodTests(DryCleaningFixture fixture) :
         const int expectedTopSize = 5;
 
         // Act
-        var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
+        var result = await QueryTop5ClientsByItemsCount();
 
         // Assert
-        Assert.DoesNotContain(result, x => x.Client.FullName == clientOutsideTop5);
+        Assert.DoesNotContain(result, x => x.FullName == clientOutsideTop5);
         Assert.Equal(expectedTopSize, result.Count);
     }
 
     [Theory]
     [InlineData("Петров Пётр Петрович", 3)] // заказ 15 (-1 день) вне периода - не учитывается
     [InlineData("Иванов Иван Иванович", 4)] // заказ 20 (-3 дня) вне периода - не учитывается
-    public void OrdersOutsidePeriod_AreNotCounted(string clientFullName, int expectedItemsCount)
+    public async Task OrdersOutsidePeriod_AreNotCounted(string clientFullName, int expectedItemsCount)
     {
         // Act
-        var result = QueryTop5ClientsByItemsCount(PeriodFrom, PeriodTo);
+        var result = await QueryTop5ClientsByItemsCount();
 
         // Assert
-        var client = result.Single(x => x.Client.FullName == clientFullName);
+        var client = result.Single(x => x.FullName == clientFullName);
         Assert.Equal(expectedItemsCount, client.ItemsCount);
     }
 }
